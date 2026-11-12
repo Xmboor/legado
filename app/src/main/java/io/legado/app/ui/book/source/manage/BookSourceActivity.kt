@@ -10,6 +10,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.os.bundleOf
+import androidx.core.view.doOnLayout
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -43,6 +45,7 @@ import io.legado.app.ui.config.CheckSourceConfig
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.widget.SelectActionBar
+import io.legado.app.ui.widget.glass.GlassBarHelper
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
@@ -151,6 +154,7 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
         initLiveDataGroup()
         initSelectActionBar()
         resumeCheckSource()
+        setupGlass()
         if (!LocalConfig.bookSourcesHelpVersionIsLast) {
             showHelp("SourceMBookHelp")
         }
@@ -396,6 +400,7 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     override fun onResume() {
         super.onResume()
         adapter.upResumed(true)
+        setupGlass()
     }
 
     override fun onPause() {
@@ -651,6 +656,27 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
                     searchView.setQuery("失效", true)
                     toastOnUi("发现有失效书源，已为您自动筛选！")
                 }
+            }
+        }
+        observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) { setupGlass() }
+    }
+
+    private fun setupGlass() {
+        binding.run {
+            GlassBarHelper.bind(
+                titleBarGlassView, titleBarShellOverlay, titleBar,
+                recyclerView, 0f, isTopBar = true
+            )
+            GlassBarHelper.bind(
+                selectActionBarGlassView, selectActionBarShellOverlay, selectActionBar,
+                recyclerView, 0f, isTopBar = false
+            )
+            titleBarContainer.doOnLayout {
+                recyclerView.setPadding(0, titleBarContainer.height, 0, recyclerView.paddingBottom)
+            }
+            selectActionBarContainer.doOnLayout {
+                val bottom = if (selectActionBarContainer.isVisible) selectActionBarContainer.height else 0
+                recyclerView.setPadding(0, recyclerView.paddingTop, 0, bottom)
             }
         }
     }

@@ -1,35 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <io.legado.app.ui.widget.TitleBar
-        android:id="@+id/title_bar"
+    <io.legado.app.ui.widget.recycler.scroller.FastScrollRecyclerView
+        android:id="@+id/recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:contentInsetStartWithNavigation="0dp"
-        app:contentLayout="@layout/view_search"
-        app:displayHomeAsUp="true"
-        app:title="@string/book_source" />
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
     <FrameLayout
+        android:id="@+id/title_bar_container"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="wrap_content"
+        android:layout_gravity="top">
 
-        <io.legado.app.ui.widget.recycler.scroller.FastScrollRecyclerView
-            android:id="@+id/recycler_view"
+        <com.qmdeve.liquidglass.widget.LiquidGlassView
+            android:id="@+id/title_bar_glass_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            android:clickable="false"
+            android:focusable="false" />
+
+        <View
+            android:id="@+id/title_bar_shell_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:focusable="false" />
+
+        <io.legado.app.ui.widget.TitleBar
+            android:id="@+id/title_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:contentInsetStartWithNavigation="0dp"
+            app:contentLayout="@layout/view_search"
+            app:displayHomeAsUp="true"
+            app:title="@string/book_source" />
 
     </FrameLayout>
 
-    <io.legado.app.ui.widget.SelectActionBar
-        android:id="@+id/select_action_bar"
+    <FrameLayout
+        android:id="@+id/select_action_bar_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom">
 
-</LinearLayout>
+        <com.qmdeve.liquidglass.widget.LiquidGlassView
+            android:id="@+id/select_action_bar_glass_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:focusable="false" />
+
+        <View
+            android:id="@+id/select_action_bar_shell_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:focusable="false" />
+
+        <io.legado.app.ui.widget.SelectActionBar
+            android:id="@+id/select_action_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </FrameLayout>
+
+</FrameLayout>
