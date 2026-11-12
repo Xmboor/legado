@@ -8,6 +8,8 @@ import android.view.SubMenu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.doOnLayout
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import io.legado.app.R
@@ -29,6 +31,7 @@ import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
 import io.legado.app.ui.widget.SelectActionBar
+import io.legado.app.ui.widget.glass.GlassBarHelper
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
@@ -108,6 +111,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
         initGroupFlow()
         upSourceFlow()
         initSelectActionBar()
+        setupGlass()
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
@@ -206,6 +210,27 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
         observeEvent<Int>(EventBus.CHECK_RSS_SOURCE_DONE) {
             keepScreenOn(false)
             toastOnUi(R.string.rss_source_check_done)
+        }
+        observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) { setupGlass() }
+    }
+
+    private fun setupGlass() {
+        binding.run {
+            GlassBarHelper.bind(
+                titleBarGlassView, titleBarShellOverlay, titleBar,
+                recyclerView, 0f, isTopBar = true
+            )
+            GlassBarHelper.bind(
+                selectActionBarGlassView, selectActionBarShellOverlay, selectActionBar,
+                recyclerView, 0f, isTopBar = false
+            )
+            titleBarContainer.doOnLayout {
+                recyclerView.setPadding(0, titleBarContainer.height, 0, recyclerView.paddingBottom)
+            }
+            selectActionBarContainer.doOnLayout {
+                val bottom = if (selectActionBarContainer.isVisible) selectActionBarContainer.height else 0
+                recyclerView.setPadding(0, recyclerView.paddingTop, 0, bottom)
+            }
         }
     }
 
@@ -374,6 +399,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
     override fun onResume() {
         super.onResume()
         adapter.upResumed(true)
+        setupGlass()
     }
 
     override fun onPause() {
