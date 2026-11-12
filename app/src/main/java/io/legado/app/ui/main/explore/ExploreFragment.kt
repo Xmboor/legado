@@ -23,6 +23,7 @@ import com.script.rhino.runScriptWithContext
 import io.legado.app.R
 import io.legado.app.base.VMBaseFragment
 import io.legado.app.constant.AppLog
+import io.legado.app.constant.EventBus
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookSource
@@ -53,6 +54,7 @@ import io.legado.app.ui.widget.ExpandableTagSelector
 import io.legado.app.ui.widget.RoundedTagBarView
 import io.legado.app.ui.widget.RowUiDialog
 import io.legado.app.ui.widget.SourceSelectDialog
+import io.legado.app.ui.widget.glass.GlassBarHelper
 import io.legado.app.utils.applyMainBottomBarPadding
 import io.legado.app.utils.applyStatusBarPadding
 import io.legado.app.utils.applyTint
@@ -60,6 +62,7 @@ import io.legado.app.utils.dpToPx
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChange
 import io.legado.app.utils.gone
 import io.legado.app.utils.InfoMap
+import io.legado.app.utils.observeEvent
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.toastOnUi
@@ -192,6 +195,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             usePaddingForRecyclerView = true
         )
         applyDiscoveryMode(loadData = false)
+        setupGlass()
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu) {
@@ -209,6 +213,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         val modern = AppConfig.modernDiscoveryPage
         usingModernDiscovery = modern
         binding.titleBar.isGone = modern
+        binding.titleBarContainer.isGone = modern
         binding.llModernDiscovery.isVisible = modern
         binding.rvFind.isGone = modern
         binding.tvEmptyMsg.isGone = modern
@@ -225,6 +230,20 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             initClassicMode()
         }
         activity?.invalidateOptionsMenu()
+    }
+
+    private fun setupGlass() {
+        binding.run {
+            GlassBarHelper.bind(
+                titleBarGlassView, titleBarShellOverlay, titleBar,
+                swipeRefreshLayout, 0f, isTopBar = true
+            )
+        }
+    }
+
+    override fun observeLiveBus() {
+        super.observeLiveBus()
+        observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) { setupGlass() }
     }
 
     private fun currentDiscoverScrollTarget(): View? {
