@@ -203,6 +203,30 @@ data class RssSource(
         return this
     }
 
+    fun removeInvalidGroups() {
+        removeGroup(getInvalidGroupNames())
+    }
+
+    fun getInvalidGroupNames(): String {
+        return sourceGroup?.splitNotBlank(AppPattern.splitGroupRegex)?.toHashSet()?.filter {
+            "失效" in it || it == "校验超时"
+        }?.joinToString() ?: ""
+    }
+
+    fun removeErrorComment() {
+        sourceComment = sourceComment
+            ?.split("\n\n")
+            ?.filterNot {
+                it.startsWith("// Error: ")
+            }?.joinToString("\n")
+    }
+
+    fun addErrorComment(e: Throwable) {
+        sourceComment =
+            "// Error: ${e.localizedMessage}" + if (sourceComment.isNullOrBlank())
+                "" else "\n\n${sourceComment}"
+    }
+
     fun getDisplayVariableComment(otherComment: String): String {
         return if (variableComment.isNullOrBlank()) {
             otherComment
