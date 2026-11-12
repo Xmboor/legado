@@ -292,6 +292,11 @@
     <string name="padding_left">左邊距</string>
     <string name="padding_right">右邊距</string>
     <string name="check_book_source">校驗書源</string>
+    <string name="check_rss_source">校驗訂閱源</string>
+    <string name="check_rss_source_selection">校驗所選</string>
+    <string name="check_rss_source_confirm">將校驗所選 %1$d 個訂閱源（只驗文章列表）</string>
+    <string name="rss_source_checking">已有訂閱源在校驗,等完成後再試</string>
+    <string name="rss_source_check_done">校驗完成</string>
     <string name="check_select_source">校驗所選</string>
     <string name="progress_show">%1$s      進度 %2$d/%3$d</string>
     <string name="tts_fix">請安裝並選擇中文 TTS!</string>

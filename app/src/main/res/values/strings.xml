@@ -330,6 +330,11 @@
     <string name="padding_left">Left</string>
     <string name="padding_right">Right</string>
     <string name="check_book_source">Check book sources</string>
+    <string name="check_rss_source">Check RSS sources</string>
+    <string name="check_rss_source_selection">Check selected</string>
+    <string name="check_rss_source_confirm">Check %1$d selected RSS sources (article list only)?</string>
+    <string name="rss_source_checking">RSS sources are already being checked, please try again later</string>
+    <string name="rss_source_check_done">Check completed</string>
     <string name="check_select_source">Check the selected source</string>
     <string name="progress_show">%1$s      Progress %2$d/%3$d</string>
     <string name="tts_fix">Please install and select Chinese TTS!</string>

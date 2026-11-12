@@ -6,12 +6,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.SubMenu
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
+import io.legado.app.constant.EventBus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.RssSource
 import io.legado.app.databinding.ActivityRssSourceBinding
@@ -20,7 +22,9 @@ import io.legado.app.help.DirectLinkUpload
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.model.CheckRssSource
 import io.legado.app.ui.association.ImportRssSourceDialog
+import io.legado.app.ui.config.CheckSourceConfig
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
@@ -32,7 +36,9 @@ import io.legado.app.utils.ACache
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.isAbsUrl
+import io.legado.app.utils.keepScreenOn
 import io.legado.app.utils.launch
+import io.legado.app.utils.observeEvent
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.share
@@ -41,6 +47,7 @@ import io.legado.app.utils.showHelp
 import io.legado.app.utils.splitNotBlank
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.transaction
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -171,9 +178,35 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
                 share(file)
             }
 
+            R.id.menu_check_rss_source -> checkRssSource()
             R.id.menu_check_selected_interval -> adapter.checkSelectedInterval()
         }
         return true
+    }
+
+    private fun checkRssSource() {
+        val selectItems = adapter.selection
+        val dialog = alert(titleResource = R.string.check_rss_source) {
+            setMessage(getString(R.string.check_rss_source_confirm, selectItems.size))
+            okButton {
+                keepScreenOn(true)
+                CheckRssSource.start(this@RssSourceActivity, selectItems)
+            }
+            neutralButton(R.string.check_source_config)
+            cancelButton()
+        }
+        //手动设置监听 避免点击打开校验设置后对话框关闭
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+            showDialogFragment<CheckSourceConfig>()
+        }
+    }
+
+    override fun observeLiveBus() {
+        super.observeLiveBus()
+        observeEvent<Int>(EventBus.CHECK_RSS_SOURCE_DONE) {
+            keepScreenOn(false)
+            toastOnUi(R.string.rss_source_check_done)
+        }
     }
 
     private fun initRecyclerView() {
