@@ -1,8 +1,8 @@
 package io.legado.app.ui.config
 
-import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -11,6 +11,7 @@ import io.legado.app.databinding.ActivityConfigBinding
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.read.config.MoreConfigDialog
 import io.legado.app.ui.book.read.config.ReadAloudConfigDialog
+import io.legado.app.ui.widget.glass.GlassBarHelper
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 
@@ -21,6 +22,7 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         applyHeaderColors()
+        setupGlass()
         when (val configTag = intent.getStringExtra("configTag")) {
             ConfigTag.OTHER_CONFIG -> replaceFragment(configTag, OtherConfigFragment::class.java)
             ConfigTag.THEME_CONFIG -> replaceFragment(configTag, ThemeConfigFragment::class.java)
@@ -53,6 +55,7 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
     override fun onResume() {
         super.onResume()
         applyHeaderColors()
+        setupGlass()
     }
 
     fun <T : Fragment> replaceFragment(configTag: String, fragmentClass: Class<T>) {
@@ -69,13 +72,24 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
         observeEvent<String>(EventBus.RECREATE) {
             recreate()
         }
+        observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) { setupGlass() }
+    }
+
+    private fun setupGlass() {
+        binding.run {
+            GlassBarHelper.bind(
+                titleBarGlassView, titleBarShellOverlay, titleBar,
+                configFrameLayout, 0f, isTopBar = true
+            )
+            titleBarContainer.doOnLayout {
+                configFrameLayout.setPadding(0, titleBarContainer.height, 0, 0)
+            }
+        }
     }
 
     private fun applyHeaderColors() {
         binding.titleBar.setTextColor(primaryTextColor)
         binding.titleBar.setColorFilter(primaryTextColor)
-        binding.titleBar.setBackgroundColor(Color.TRANSPARENT)
-        binding.titleBar.elevation = 0f
     }
 
 }
