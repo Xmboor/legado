@@ -9,6 +9,14 @@
         app:iconSpaceReserved="false"
         app:layout="@layout/view_preference_category">
 
+        <io.legado.app.lib.prefs.Preference
+            android:key="webDavProvider"
+            android:summary="坚果云 / 飞牛 fnOS / 自定义，点击快速填入地址"
+            android:title="备份服务商预设"
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:iconSpaceReserved="false" />
+
         <io.legado.app.lib.prefs.EditTextPreference
             android:key="web_dav_url"
             android:summary="@string/web_dav_url_s"

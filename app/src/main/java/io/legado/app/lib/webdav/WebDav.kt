@@ -287,17 +287,60 @@ open class WebDav(
         //防止报错
         return kotlin.runCatching {
             if (!exists()) {
-                webDavClient.newCallResponse {
-                    url(url)
-                    method("MKCOL", null)
-                }.use {
-                    checkResult(it)
+                val firstTry = kotlin.runCatching {
+                    webDavClient.newCallResponse {
+                        url(url)
+                        method("MKCOL", null)
+                    }.use {
+                        checkResult(it)
+                    }
+                }
+                if (firstTry.isFailure) {
+                    // 父目录可能不存在（如飞牛 fnOS 自定义嵌套子目录），逐级补建后重试
+                    makeParentDirs(url)
+                    webDavClient.newCallResponse {
+                        url(url)
+                        method("MKCOL", null)
+                    }.use {
+                        checkResult(it)
+                    }
                 }
             }
         }.onFailure {
             currentCoroutineContext().ensureActive()
             AppLog.put("WebDav创建目录失败\n${it.localizedMessage}", it)
         }.isSuccess
+    }
+
+    /**
+     * 自顶向下补建缺失的父目录，兼容需要完整路径才允许 MKCOL 的 WebDAV 服务。
+     * 仅在 [makeAsDir] 首次创建失败时调用，正常路径不受影响。
+     */
+    private suspend fun makeParentDirs(targetUrl: String) {
+        val missing = mutableListOf<String>()
+        var current = targetUrl.removeSuffix("/")
+        while (true) {
+            val parent = current.substringBeforeLast("/", "")
+            if (parent.isEmpty() || parent == current) break
+            // 到达 scheme://host 根（无路径部分）则停止
+            val schemeIdx = parent.indexOf("://")
+            if (schemeIdx >= 0 && parent.indexOf('/', schemeIdx + 3) < 0) break
+            if (WebDav(parent + "/", authorization).exists()) break
+            missing.add(parent + "/")
+            current = parent
+        }
+        missing.reversed().forEach { dir ->
+            kotlin.runCatching {
+                webDavClient.newCallResponse {
+                    url(dir)
+                    method("MKCOL", null)
+                }.use {
+                    // 容忍 405（目录已存在）等情况
+                }
+            }.onFailure {
+                currentCoroutineContext().ensureActive()
+            }
+        }
     }
 
     /**

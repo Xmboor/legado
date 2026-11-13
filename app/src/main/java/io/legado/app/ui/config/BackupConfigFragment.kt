@@ -62,6 +62,7 @@ import io.legado.app.utils.getPrefString
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.launch
 import io.legado.app.utils.openInputStream
+import io.legado.app.utils.putPrefString
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
@@ -267,11 +268,62 @@ class BackupConfigFragment : PreferenceFragment(),
         when (preference.key) {
             PreferKey.backupPath -> selectBackupPath.launch()
             PreferKey.restoreIgnore -> backupIgnore()
+            "webDavProvider" -> showWebDavProviderDialog()
             "web_dav_backup" -> backup()
             "web_dav_restore" -> restore()
             "import_old" -> restoreOld.launch()
         }
         return super.onPreferenceTreeClick(preference)
+    }
+
+    /**
+     * 备份服务商预设：快速填入坚果云 / 飞牛 fnOS 的 WebDAV 地址并给出配置引导
+     */
+    private fun showWebDavProviderDialog() {
+        val providers = listOf("坚果云（推荐）", "飞牛 fnOS NAS", "自定义 WebDAV")
+        alert(title = "选择备份服务商") {
+            items(providers) { _, index ->
+                when (index) {
+                    0 -> applyNutstorePreset()
+                    1 -> applyFnOsPreset()
+                    2 -> toastOnUi("请手动填写 WebDAV 地址、账号和密码")
+                }
+            }
+            cancelButton()
+        }
+    }
+
+    private fun applyWebDavUrlPreset(url: String) {
+        appCtx.putPrefString(PreferKey.webDavUrl, url)
+        upPreferenceSummary(PreferKey.webDavUrl, url)
+        viewModel.upWebDavConfig()
+    }
+
+    private fun applyNutstorePreset() {
+        applyWebDavUrlPreset("https://dav.jianguoyun.com/dav/")
+        alert(title = "坚果云配置说明") {
+            setMessage(
+                "地址已填入坚果云默认 WebDAV。\n\n" +
+                "账号：填你的坚果云登录邮箱。\n" +
+                "密码：不是登录密码！请在坚果云网页端「设置 → 安全选项 → 第三方应用管理」添加应用并生成「应用密码」，再把应用密码填到下方密码栏。\n\n" +
+                "子目录可保持默认 legado。填好账号密码后即可备份/恢复。"
+            )
+            okButton()
+        }
+    }
+
+    private fun applyFnOsPreset() {
+        applyWebDavUrlPreset("http://192.168.1.100:5005/dav/")
+        alert(title = "飞牛 fnOS 配置说明") {
+            setMessage(
+                "已填入示例地址，请改成你的实际配置：\n\n" +
+                "1. 在飞牛「系统设置 → 文件服务/网络服务」开启 WebDAV，记下端口（HTTP 常见 5005，HTTPS 常见 5006，以你实际设置为准）。\n" +
+                "2. 把地址改为 http(s)://你的NAS地址:WebDAV端口/dav/，路径固定为 /dav/。\n" +
+                "3. 账号密码填飞牛的用户名和密码。\n\n" +
+                "局域网可用 http，外网建议用 https。"
+            )
+            okButton()
+        }
     }
 
     /**
