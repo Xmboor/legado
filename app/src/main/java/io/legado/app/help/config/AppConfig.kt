@@ -330,6 +330,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val modernRssPage: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.modernRssPage, true)
 
+    var sourceManageDoubleColumn: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.sourceManageDoubleColumn, false)
+        set(value) = appCtx.putPrefBoolean(PreferKey.sourceManageDoubleColumn, value)
+
     val mergeDiscoveryRss: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.mergeDiscoveryRss, false)
 

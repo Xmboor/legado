@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -19,6 +20,7 @@ import io.legado.app.data.entities.RssSource
 import io.legado.app.databinding.ActivityRssSourceBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
@@ -38,6 +40,7 @@ import io.legado.app.utils.dpToPx
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.keepScreenOn
 import io.legado.app.utils.launch
+import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.setEdgeEffectColor
@@ -55,6 +58,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -68,13 +72,16 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
     override val binding by viewBinding(ActivityRssSourceBinding::inflate)
     override val viewModel by viewModels<RssSourceViewModel>()
     private val importRecordKey = "rssSourceRecordKey"
-    private val adapter by lazy { RssSourceAdapter(this, this) }
+    private val adapter by lazy { RssSourceAdapter(this, this, binding.recyclerView) }
+    private val itemTouchCallback by lazy { ItemTouchCallback(adapter) }
     private val searchView: SearchView by lazy {
         binding.titleBar.findViewById(R.id.search_view)
     }
     private var sourceFlowJob: Job? = null
     private var groups = arrayListOf<String>()
     private var groupMenu: SubMenu? = null
+    private var groupSourcesByDomain = true
+    private val hostMap = hashMapOf<String, String>()
     private val qrCodeResult = registerForActivityResult(QrCodeResult()) {
         it ?: return@registerForActivityResult
         showDialogFragment(ImportRssSourceDialog(it))
@@ -118,6 +125,8 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         groupMenu = menu.findItem(R.id.menu_group)?.subMenu
+        menu.findItem(R.id.menu_group_sources_by_domain)?.isChecked = groupSourcesByDomain
+        menu.findItem(R.id.menu_source_double_column)?.isChecked = AppConfig.sourceManageDoubleColumn
         upGroupMenu()
         return super.onPrepareOptionsMenu(menu)
     }
@@ -151,6 +160,20 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
             }
 
             R.id.menu_help -> showHelp("SourceMRssHelp")
+            R.id.menu_group_sources_by_domain -> {
+                item.isChecked = !item.isChecked
+                groupSourcesByDomain = item.isChecked
+                adapter.showSourceHost = item.isChecked
+                upSourceFlow(searchView.query?.toString())
+            }
+
+            R.id.menu_source_double_column -> {
+                item.isChecked = !item.isChecked
+                AppConfig.sourceManageDoubleColumn = item.isChecked
+                (binding.recyclerView.layoutManager as? GridLayoutManager)?.spanCount =
+                    if (item.isChecked) 2 else 1
+            }
+
             else -> if (item.groupId == R.id.source_group) {
                 searchView.setQuery("group:${item.title}", true)
             }
@@ -227,6 +250,9 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
     private fun initRecyclerView() {
         binding.recyclerView.setEdgeEffectColor(primaryColor)
         binding.recyclerView.adapter = adapter
+        adapter.showSourceHost = groupSourcesByDomain
+        (binding.recyclerView.layoutManager as? GridLayoutManager)?.spanCount =
+            if (AppConfig.sourceManageDoubleColumn) 2 else 1
         adapter.setOnItemClickListener { _, item ->
             if (adapter.selection.isEmpty()) {
                 item.enabled = !item.enabled
@@ -241,8 +267,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
         dragSelectTouchHelper.attachToRecyclerView(binding.recyclerView)
         dragSelectTouchHelper.activeSlideSelect()
         // Note: need judge selection first, so add ItemTouchHelper after it.
-        val itemTouchCallback = ItemTouchCallback(adapter)
-        itemTouchCallback.isCanDrag = true
+        itemTouchCallback.isCanDrag = !groupSourcesByDomain
         ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
     }
 
@@ -384,10 +409,22 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
                 else -> {
                     appDb.rssSourceDao.flowSearch(searchKey)
                 }
+            }.map { data ->
+                hostMap.clear()
+                if (groupSourcesByDomain) {
+                    data.sortedWith(
+                        compareBy<RssSource> { getSourceHost(it.sourceUrl) == "#" }
+                            .thenBy { getSourceHost(it.sourceUrl) }
+                            .thenByDescending { it.lastUpdateTime }
+                    )
+                } else {
+                    data
+                }
             }.catch {
                 AppLog.put("订阅源管理界面更新数据出错", it)
             }.flowOn(IO).conflate().collect {
                 adapter.setItems(it, adapter.diffItemCallback)
+                itemTouchCallback.isCanDrag = !groupSourcesByDomain
                 delay(100)
             }
         }
@@ -409,6 +446,12 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
             adapter.selection.size,
             adapter.itemCount
         )
+    }
+
+    override fun getSourceHost(origin: String): String {
+        return hostMap.getOrPut(origin) {
+            NetworkUtils.getSubDomainOrNull(origin) ?: "#"
+        }
     }
 
     @SuppressLint("InflateParams")

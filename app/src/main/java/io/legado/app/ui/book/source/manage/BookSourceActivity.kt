@@ -15,6 +15,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.google.android.material.snackbar.Snackbar
 import io.legado.app.R
@@ -27,6 +28,7 @@ import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.databinding.ActivityBookSourceBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.applyUiSearchTypeface
@@ -102,7 +104,7 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     override var sortAscending = true
         private set
     private var snackBar: Snackbar? = null
-    private var groupSourcesByDomain = false
+    private var groupSourcesByDomain = true
     private val hostMap = hashMapOf<String, String>()
     private val qrResult = registerForActivityResult(QrCodeResult()) {
         it ?: return@registerForActivityResult
@@ -167,6 +169,8 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
         val sortSubMenu = menu.findItem(R.id.action_sort).subMenu!!
         sortSubMenu.findItem(R.id.menu_sort_desc).isChecked = !sortAscending
         sortSubMenu.setGroupCheckable(R.id.menu_group_sort, true, true)
+        menu.findItem(R.id.menu_group_sources_by_domain)?.isChecked = groupSourcesByDomain
+        menu.findItem(R.id.menu_source_double_column)?.isChecked = AppConfig.sourceManageDoubleColumn
         upGroupMenu()
         return super.onPrepareOptionsMenu(menu)
     }
@@ -262,6 +266,13 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
                 upBookSource(searchView.query?.toString())
             }
 
+            R.id.menu_source_double_column -> {
+                item.isChecked = !item.isChecked
+                AppConfig.sourceManageDoubleColumn = item.isChecked
+                (binding.recyclerView.layoutManager as? GridLayoutManager)?.spanCount =
+                    if (item.isChecked) 2 else 1
+            }
+
             R.id.menu_help -> showHelp("SourceMBookHelp")
         }
         if (item.groupId == R.id.source_group) {
@@ -273,6 +284,9 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     private fun initRecyclerView() {
         binding.recyclerView.setEdgeEffectColor(primaryColor)
         binding.recyclerView.adapter = adapter
+        adapter.showSourceHost = groupSourcesByDomain
+        (binding.recyclerView.layoutManager as? GridLayoutManager)?.spanCount =
+            if (AppConfig.sourceManageDoubleColumn) 2 else 1
         binding.recyclerView.recycledViewPool.setMaxRecycledViews(0, 15)
         adapter.setOnItemClickListener { _, item ->
             if (adapter.selection.isEmpty()) {

@@ -47,6 +47,7 @@ object PreferKey {
     const val showReadRecord = "showReadRecord"
     const val modernDiscoveryPage = "modernDiscoveryPage"
     const val modernRssPage = "modernRssPage"
+    const val sourceManageDoubleColumn = "sourceManageDoubleColumn"
     const val mergeDiscoveryRss = "mergeDiscoveryRss"
     const val mergedDiscoveryRssTarget = "mergedDiscoveryRssTarget"
     const val modernDiscoverySourceUrl = "modernDiscoverySourceUrl"

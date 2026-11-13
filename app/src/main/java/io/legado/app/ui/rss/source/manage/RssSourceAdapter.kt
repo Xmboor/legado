@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.ColorUtils
 import androidx.core.os.bundleOf
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
@@ -20,15 +21,23 @@ import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
+import io.legado.app.utils.buildMainHandler
+import io.legado.app.utils.gone
 import io.legado.app.utils.showPopupMenu
+import io.legado.app.utils.visible
 import java.util.Collections
 
 
-class RssSourceAdapter(context: Context, val callBack: CallBack) :
-    RecyclerAdapter<RssSource, ItemRssSourceBinding>(context),
+class RssSourceAdapter(
+    context: Context,
+    val callBack: CallBack,
+    private val recyclerView: RecyclerView
+) : RecyclerAdapter<RssSource, ItemRssSourceBinding>(context),
     ItemTouchCallback.Callback {
 
     private val selected = linkedSetOf<RssSource>()
+    private val handler = buildMainHandler()
+    var showSourceHost = false
 
     val selection: List<RssSource>
         get() {
@@ -82,6 +91,7 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
                 swtEnabled.isChecked = item.enabled
                 cbSource.isChecked = selected.contains(item)
                 upCardBackground(binding, item)
+                upSourceHost(binding, holder.layoutPosition)
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
@@ -96,6 +106,7 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
                                 cbSource.isChecked = selected.contains(item)
                                 upCardBackground(binding, item)
                             }
+                            "upSourceHost" -> upSourceHost(binding, holder.layoutPosition)
                         }
                     }
                 }
@@ -164,6 +175,11 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
 
     override fun onCurrentListChanged() {
         callBack.upCountView()
+        recyclerView.doOnLayout {
+            handler.post {
+                notifyItemRangeChanged(0, itemCount, bundleOf("upSourceHost" to null))
+            }
+        }
     }
 
     fun selectAll() {
@@ -221,6 +237,27 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
             }
             true
         }
+    }
+
+    private fun upSourceHost(binding: ItemRssSourceBinding, position: Int) = binding.run {
+        if (showSourceHost && isItemHeader(position)) {
+            tvHostText.text = getHeaderText(position)
+            tvHostText.visible()
+        } else {
+            tvHostText.gone()
+        }
+    }
+
+    fun getHeaderText(position: Int): String {
+        val source = getItem(position)!!
+        return callBack.getSourceHost(source.sourceUrl)
+    }
+
+    fun isItemHeader(position: Int): Boolean {
+        if (position == 0) return true
+        val lastHost = getHeaderText(position - 1)
+        val curHost = getHeaderText(position)
+        return lastHost != curHost
     }
 
     override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
@@ -283,5 +320,6 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
         fun toBottom(source: RssSource)
         fun upOrder()
         fun upCountView()
+        fun getSourceHost(origin: String): String
     }
 }
