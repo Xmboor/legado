@@ -13,6 +13,7 @@ import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
 import io.legado.app.constant.Theme
 import io.legado.app.help.DefaultData
+import io.legado.app.lib.theme.DynamicColor
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.model.BookCover
 import io.legado.app.utils.BitmapUtils
@@ -640,6 +641,40 @@ object ThemeConfig {
                     .accentColor(Color.BLACK)
                     .backgroundColor(Color.WHITE)
                     .bottomBackground(Color.WHITE)
+                    .transparentNavBar(true)
+                    .apply()
+            }
+
+            AppConfig.isDynamicColor && DynamicColor.isAvailable() -> {
+                val isNight = AppConfig.isNightTheme
+                val fbPrimary = getPrefInt(
+                    if (isNight) PreferKey.cNPrimary else PreferKey.cPrimary,
+                    if (isNight) DEFAULT_NIGHT_PRIMARY else DEFAULT_DAY_PRIMARY
+                )
+                val fbAccent = getPrefInt(
+                    if (isNight) PreferKey.cNAccent else PreferKey.cAccent,
+                    getCompatColor(if (isNight) R.color.md_deep_orange_800 else R.color.md_red_600)
+                )
+                val fbBackground = getPrefInt(
+                    if (isNight) PreferKey.cNBackground else PreferKey.cBackground,
+                    getCompatColor(if (isNight) R.color.md_grey_900 else R.color.md_grey_100)
+                )
+                val fbBottom = getPrefInt(
+                    if (isNight) PreferKey.cNBBackground else PreferKey.cBBackground,
+                    getCompatColor(if (isNight) R.color.md_grey_850 else R.color.md_grey_200)
+                )
+                val p = DynamicColor.palette(
+                    this, isNight,
+                    DynamicColor.Palette(fbPrimary, fbAccent, fbBackground, fbBottom)
+                )
+                val appBackground =
+                    if (hasUsableBgImage(this)) Color.TRANSPARENT
+                    else ColorUtils.withAlpha(p.background, 1f)
+                ThemeStore.editTheme(this)
+                    .primaryColor(ColorUtils.withAlpha(p.primary, 1f))
+                    .accentColor(ColorUtils.withAlpha(p.accent, 1f))
+                    .backgroundColor(appBackground)
+                    .bottomBackground(ColorUtils.withAlpha(p.bottomBackground, 1f))
                     .transparentNavBar(true)
                     .apply()
             }

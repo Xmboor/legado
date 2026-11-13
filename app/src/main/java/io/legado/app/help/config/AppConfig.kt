@@ -1174,6 +1174,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val uiCornerReplyFollow: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.uiCornerReplyFollow, false)
 
+    var isDynamicColor: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.cDynamicColor, false)
+        set(value) = appCtx.putPrefBoolean(PreferKey.cDynamicColor, value)
+
     var liquidGlassLevel: Int
         get() = appCtx.getPrefInt(PreferKey.liquidGlassLevel, 68).coerceIn(0, 100)
         set(value) {

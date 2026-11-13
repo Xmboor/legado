@@ -612,6 +612,9 @@
     <string name="clear_find_cache">清空发现缓存</string>
     <string name="edit_find">编辑发现</string>
     <string name="change_icon_summary">切换软件显示在桌面的图标</string>
+    <string name="dynamic_color">Material You 动态取色</string>
+    <string name="dynamic_color_summary">跟随系统壁纸自动取色（Android 12+），开启后覆盖手动主题色</string>
+    <string name="dynamic_color_unavailable">需要 Android 12 及以上</string>
     <string name="help">帮助</string>
     <string name="my">我的</string>
     <string name="reading">阅读</string>

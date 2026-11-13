@@ -274,6 +274,7 @@ object PreferKey {
     const val cAccent = "colorAccent"
     const val cBackground = "colorBackground"
     const val cBBackground = "colorBottomBackground"
+    const val cDynamicColor = "dynamicColor"
     const val bgImage = "backgroundImage"
     const val bgImageBlurring = "backgroundImageBlurring"
     const val bookInfoBgImage = "bookInfoBackgroundImage"

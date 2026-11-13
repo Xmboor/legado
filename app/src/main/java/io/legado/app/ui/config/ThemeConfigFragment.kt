@@ -147,6 +147,12 @@ class ThemeConfigFragment : PreferenceFragment(),
                 }
             }
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            findPreference<io.legado.app.lib.prefs.SwitchPreference>(PreferKey.cDynamicColor)?.let {
+                it.isEnabled = false
+                it.summary = getString(R.string.dynamic_color_unavailable)
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -192,6 +198,7 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.immNavigationBar -> recreateActivities()
             PreferKey.moveSearchToBookshelf -> postEvent(key, getPrefBoolean(key))
             PreferKey.showReadRecord -> postEvent(EventBus.NOTIFY_MAIN, true)
+            PreferKey.cDynamicColor -> upTheme(AppConfig.isNightTheme)
             PreferKey.cPrimary,
             PreferKey.cAccent,
             PreferKey.cBackground,

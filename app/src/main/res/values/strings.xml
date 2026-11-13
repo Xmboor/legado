@@ -611,6 +611,9 @@
     <string name="clear_find_cache">Clear Discovery cache</string>
     <string name="edit_find">Edit Discovery</string>
     <string name="change_icon_summary">Switch the software icon displayed on the desktop</string>
+    <string name="dynamic_color">Material You dynamic color</string>
+    <string name="dynamic_color_summary">Follow the system wallpaper palette (Android 12+). Overrides manual theme colors.</string>
+    <string name="dynamic_color_unavailable">Requires Android 12 or above</string>
     <string name="help">Help</string>
     <string name="my">Me</string>
     <string name="ai">AI</string>
