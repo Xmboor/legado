@@ -2,10 +2,12 @@ package io.legado.app.ui.book.source.manage
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.core.graphics.ColorUtils
 import androidx.core.os.bundleOf
 import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.DiffUtil
@@ -15,6 +17,8 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.databinding.ItemBookSourceBinding
+import io.legado.app.lib.theme.primaryColor
+import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.model.Debug
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
@@ -97,9 +101,10 @@ class BookSourceAdapter(
     ) {
         binding.run {
             if (payloads.isEmpty()) {
-                cbBookSource.text = item.getDisPlayNameGroup()
+                tvName.text = item.getDisPlayNameGroup()
                 swtEnabled.isChecked = item.enabled
                 cbBookSource.isChecked = selected.contains(item)
+                upCardBackground(binding, item)
                 upCheckSourceMessage(binding, item)
                 upShowExplore(ivExplore, item)
                 upSourceHost(binding, holder.layoutPosition)
@@ -108,10 +113,16 @@ class BookSourceAdapter(
                     val bundle = payloads[i] as Bundle
                     bundle.keySet().forEach {
                         when (it) {
-                            "enabled" -> swtEnabled.isChecked = bundle.getBoolean("enabled")
-                            "upName" -> cbBookSource.text = item.getDisPlayNameGroup()
+                            "enabled" -> {
+                                swtEnabled.isChecked = bundle.getBoolean("enabled")
+                                upCardBackground(binding, item)
+                            }
+                            "upName" -> tvName.text = item.getDisPlayNameGroup()
                             "upExplore" -> upShowExplore(ivExplore, item)
-                            "selected" -> cbBookSource.isChecked = selected.contains(item)
+                            "selected" -> {
+                                cbBookSource.isChecked = selected.contains(item)
+                                upCardBackground(binding, item)
+                            }
                             "checkSourceMessage" -> upCheckSourceMessage(binding, item)
                             "upSourceHost" -> upSourceHost(binding, holder.layoutPosition)
                         }
@@ -119,6 +130,35 @@ class BookSourceAdapter(
                 }
             }
         }
+    }
+
+    private fun upCardBackground(binding: ItemBookSourceBinding, item: BookSourcePart) {
+        val density = context.resources.displayMetrics.density
+        val isSelected = selected.contains(item)
+        val strokeColor = if (item.enabled) context.primaryColor else context.secondaryTextColor
+        val fillColor = when {
+            isSelected -> ColorUtils.setAlphaComponent(context.primaryColor, 60)
+            item.enabled -> ColorUtils.setAlphaComponent(context.primaryColor, 20)
+            else -> Color.TRANSPARENT
+        }
+        binding.root.background = GradientDrawable().apply {
+            cornerRadius = 12f * density
+            setColor(fillColor)
+            setStroke(density.toInt().coerceAtLeast(1), strokeColor)
+        }
+    }
+
+    fun toggleSelection(item: BookSourcePart) {
+        if (selected.contains(item)) {
+            selected.remove(item)
+        } else {
+            selected.add(item)
+        }
+        val position = getItems().indexOfFirst { it.bookSourceUrl == item.bookSourceUrl }
+        if (position >= 0) {
+            notifyItemChanged(position, bundleOf(Pair("selected", null)))
+        }
+        callBack.upCountView()
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemBookSourceBinding) {
@@ -162,6 +202,7 @@ class BookSourceAdapter(
     private fun showMenu(view: View, position: Int) {
         val source = getItem(position) ?: return
         val actions = buildList {
+            add(PopupMenuAction(context.getString(R.string.select)) { toggleSelection(source) })
             if (callBack.sort == BookSourceSort.Default) {
                 add(PopupMenuAction(context.getString(R.string.to_top)) { callBack.toTop(source) })
                 add(PopupMenuAction(context.getString(R.string.to_bottom)) { callBack.toBottom(source) })
