@@ -34,6 +34,7 @@ import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.book.read.config.ContentSelectMenuConfigDialog
 import io.legado.app.ui.video.config.SettingsDialog
 import io.legado.app.ui.widget.code.addJsonPattern
+import io.legado.app.ui.widget.number.NumberInputDialog
 import io.legado.app.ui.widget.number.NumberPickerDialog
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.getPrefBoolean
@@ -130,7 +131,7 @@ class OtherConfigFragment : PreferenceFragment(),
                 mode = HandleFileContract.DIR_SYS
             }
 
-            PreferKey.preDownloadNum -> NumberPickerDialog(requireContext())
+            PreferKey.preDownloadNum -> NumberInputDialog(requireContext())
                 .setTitle(getString(R.string.pre_download))
                 .setMaxValue(9999)
                 .setMinValue(0)
@@ -139,7 +140,7 @@ class OtherConfigFragment : PreferenceFragment(),
                     AppConfig.preDownloadNum = it
                 }
 
-            PreferKey.threadCount -> NumberPickerDialog(requireContext())
+            PreferKey.threadCount -> NumberInputDialog(requireContext())
                 .setTitle(getString(R.string.threads_num_title))
                 .setMaxValue(999)
                 .setMinValue(1)
@@ -163,7 +164,7 @@ class OtherConfigFragment : PreferenceFragment(),
             PreferKey.uploadRule -> showDialogFragment<DirectLinkUploadConfig>()
             PreferKey.checkSource -> showDialogFragment<CheckSourceConfig>()
             PreferKey.bitmapCacheSize -> {
-                NumberPickerDialog(requireContext())
+                NumberInputDialog(requireContext())
                     .setTitle(getString(R.string.bitmap_cache_size))
                     .setMaxValue(1024)
                     .setMinValue(1)
@@ -173,7 +174,7 @@ class OtherConfigFragment : PreferenceFragment(),
                         ImageProvider.bitmapLruCache.resize(ImageProvider.cacheSize)
                     }
             }
-            PreferKey.imageRetainNum -> NumberPickerDialog(requireContext())
+            PreferKey.imageRetainNum -> NumberInputDialog(requireContext())
                 .setTitle(getString(R.string.image_retain_number))
                 .setMaxValue(999)
                 .setMinValue(0)
