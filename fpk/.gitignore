@@ -1,0 +1,4 @@
+# 构建产物与安装包不提交 git
+LegadoDownload/app/www/legado.apk
+*.fpk
+.DS_Store

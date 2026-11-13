@@ -1,0 +1,11 @@
+appname               = LegadoDownload
+version               = 3.26.111315
+display_name          = 阅读 legado 下载站
+desc                  = 阅读 legado 自定义增强版 APK 下载站（纯静态飞牛应用，无容器、无后台进程）
+arch                  = x86_64
+source                = thirdparty
+maintainer            = Xmboor
+distributor           = Xmboor
+desktop_uidir         = ui
+desktop_applaunchname = LegadoDownload.Application
+ctl_stop              = false

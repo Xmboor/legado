@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1420" />
+<title>阅读 legado · 自定义增强版 下载</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:rgba(255,255,255,.045); --line:rgba(255,255,255,.10);
+    --txt:#e8ecf4; --sub:#9aa6bd; --accent:#5b8cff; --accent2:#8a63ff; --ok:#3ddc97;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--txt); background:var(--bg); line-height:1.6; min-height:100vh;
+    background-image:radial-gradient(1200px 600px at 15% -10%,rgba(91,140,255,.20),transparent 60%),
+                     radial-gradient(1000px 500px at 110% 10%,rgba(138,99,255,.18),transparent 55%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:40px 20px 64px}
+  .hero{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .logo{width:60px;height:60px;border-radius:16px;flex:0 0 auto;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px rgba(91,140,255,.35)}
+  .logo svg{width:34px;height:34px}
+  h1{font-size:26px;margin:0;letter-spacing:.5px}
+  .tag{display:inline-block;margin-top:4px;font-size:12.5px;color:var(--sub)}
+  .badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:999px;
+    border:1px solid var(--line);background:var(--card);color:var(--txt);margin-left:8px;vertical-align:middle}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:22px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .dl{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+  .btn{appearance:none;border:0;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px;
+    font-size:17px;font-weight:600;color:#fff;padding:15px 28px;border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 28px rgba(91,140,255,.4);
+    transition:transform .12s ease,box-shadow .12s ease}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(91,140,255,.5)}
+  .btn:active{transform:translateY(0)}
+  .btn svg{width:20px;height:20px}
+  .dlmeta{font-size:13.5px;color:var(--sub)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  .meta{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .meta .k{font-size:12px;color:var(--sub)}
+  .meta .v{font-size:15px;font-weight:600;margin-top:2px}
+  h2{font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  ul{margin:0;padding-left:20px}
+  li{margin:6px 0;color:#d4dbea;font-size:14.5px}
+  li b{color:var(--txt)}
+  .sha{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .sha code{flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--sub);
+    background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:10px 12px;word-break:break-all}
+  .copy{flex:0 0 auto;cursor:pointer;font-size:12.5px;color:var(--txt);background:rgba(255,255,255,.06);
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .copy:hover{background:rgba(255,255,255,.12)}
+  .links{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+  .link{flex:1;min-width:200px;text-decoration:none;color:var(--txt);border:1px solid var(--line);
+    background:rgba(255,255,255,.03);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:10px;font-size:14px}
+  .link:hover{background:rgba(255,255,255,.08)}
+  .link svg{width:18px;height:18px;color:var(--sub)}
+  .note{font-size:13px;color:var(--sub);margin-top:16px}
+  footer{margin-top:30px;text-align:center;font-size:12.5px;color:var(--sub)}
+  footer a{color:var(--sub)}
+  @media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.wrap{padding:28px 16px 48px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z" fill="#fff" fill-opacity=".92"/>
+        <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5V5.5Z" fill="#fff" fill-opacity=".72"/>
+      </svg>
+    </div>
+    <div>
+      <h1>阅读 legado<span class="badge">自定义增强版</span></h1>
+      <div class="tag">开源安卓阅读器 · 本 fork 集成多项界面与交互增强</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="dl">
+      <a class="btn" href="legado.apk" download>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        下载 APK
+      </a>
+      <div class="dlmeta">版本 <b>3.26.111315</b>（10077）<br/>更新于 2026-11-13 · 直链由本飞牛应用托管</div>
+    </div>
+    <div class="grid">
+      <div class="meta"><div class="k">文件大小</div><div class="v">37.6 MB</div></div>
+      <div class="meta"><div class="k">系统要求</div><div class="v">Android 5.0+</div></div>
+      <div class="meta"><div class="k">架构</div><div class="v">通用 APK</div></div>
+    </div>
+    <div class="note">安装提示：下载后在手机上打开 APK，按提示允许「安装未知来源应用」即可。覆盖安装可保留数据。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>本次更新</h2>
+    <ul>
+      <li><b>主页顶栏长按删除源</b>：现代模式发现/订阅顶栏，长按源标签即可确认删除，轻点仍为切换启用。</li>
+      <li><b>其他设置手动输入数字</b>：图片绘制缓存、漫画保留数量、预下载、更新和搜索线程数改为输入框，越界自动收敛、留空保留原值。</li>
+      <li><b>源管理默认单列 + 按域名分组</b>：书源/订阅源管理默认单列、按域名分节，菜单可切双列并持久化。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>累计增强</h2>
+    <ul>
+      <li>主页顶栏横向滑动源切换条（发现/订阅，替换下拉）。</li>
+      <li>Material You 动态取色、搜索定位高亮、卡片圆角/透明度统一。</li>
+      <li>书源/订阅管理页卡片平铺、玻璃化界面、订阅源校验所选。</li>
+      <li>底栏新增订阅入口、备份恢复支持坚果云/飞牛存储、顶部留白与导入修复。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>校验和（SHA-256）</h2>
+    <div class="sha">
+      <code id="sha">100a350160637844c75510adac34aa7c2003d259118adb5629de099727e2b74a</code>
+      <button class="copy" id="copyBtn" type="button">复制</button>
+    </div>
+    <div class="links">
+      <a class="link" href="https://github.com/Xmboor/legado" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+        GitHub 仓库
+      </a>
+      <a class="link" href="https://github.com/Xmboor/legado/releases/tag/v3.26.111315" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 12 22l-8.59-8.59A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.41.59l7.18 7.18a2 2 0 0 1 0 2.82Z" stroke-linejoin="round"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+        Release 页面
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    基于开源项目 <a href="https://github.com/gedoor/legado" target="_blank" rel="noopener">gedoor/legado</a> · 仅供个人学习使用 · 由飞牛 fnOS 原生静态应用托管
+  </footer>
+</div>
+<script>
+  (function(){
+    var btn=document.getElementById('copyBtn'),sha=document.getElementById('sha');
+    if(btn&&sha){btn.addEventListener('click',function(){
+      var t=sha.textContent.trim();
+      function done(){btn.textContent='已复制';setTimeout(function(){btn.textContent='复制';},1600);}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(function(){fallback(t);done();});}
+      else{fallback(t);done();}
+    });}
+    function fallback(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+  })();
+</script>
+</body>
+</html>

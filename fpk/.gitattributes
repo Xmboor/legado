@@ -1,0 +1,4 @@
+# 飞牛 fnOS 应用：脚本/CGI 必须使用 LF 换行。
+# 若在 Windows 上检出为 CRLF，fnOS 的 bash/CGI 会因 "#!/bin/bash\r" 报错。
+# text=auto 自动识别二进制（PNG 图标不受影响），文本一律规范化为 LF。
+* text=auto eol=lf
