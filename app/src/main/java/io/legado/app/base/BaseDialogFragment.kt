@@ -24,8 +24,10 @@ import io.legado.app.lib.theme.dialogSurfaceBackground
 import io.legado.app.utils.applyAdaptiveDim
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.setBackgroundKeepPadding
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import splitties.init.appCtx
 import kotlin.coroutines.CoroutineContext
 
 
@@ -102,11 +104,28 @@ abstract class BaseDialogFragment(
 
     override fun show(manager: FragmentManager, tag: String?) {
         kotlin.runCatching {
-            //在每个add事务前增加一个remove事务，防止连续的add
-            manager.beginTransaction().remove(this).commit()
-            super.show(manager, tag)
+            // 已在显示则不重复添加，避免 "Fragment already added" 异常
+            if (isAdded) {
+                return@runCatching
+            }
+            // 同步清理同 tag 的残留实例，消除旧写法异步 remove(this) 与本次 add 的竞争
+            val stale = manager.findFragmentByTag(tag)
+            if (stale != null && stale !== this) {
+                manager.beginTransaction().remove(stale).commitNowAllowingStateLoss()
+            }
+            if (manager.isStateSaved) {
+                // 刚从文件选择器/扫码页返回时状态可能已保存，
+                // 用允许状态丢失的提交，避免 IllegalStateException 被静默吞掉导致"不弹框"
+                manager.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .add(this, tag)
+                    .commitAllowingStateLoss()
+            } else {
+                super.show(manager, tag)
+            }
         }.onFailure {
             AppLog.put("显示对话框失败 tag:$tag", it)
+            appCtx.toastOnUi("显示对话框失败：${it.localizedMessage}")
         }
     }
 
