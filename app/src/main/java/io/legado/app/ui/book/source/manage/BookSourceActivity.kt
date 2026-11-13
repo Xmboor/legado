@@ -10,8 +10,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.os.bundleOf
-import androidx.core.view.doOnLayout
-import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -671,13 +669,6 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
                 selectActionBarGlassView, selectActionBarShellOverlay, selectActionBar,
                 recyclerView, 0f, isTopBar = false
             )
-            titleBarContainer.doOnLayout {
-                recyclerView.setPadding(0, titleBarContainer.height, 0, recyclerView.paddingBottom)
-            }
-            selectActionBarContainer.doOnLayout {
-                val bottom = if (selectActionBarContainer.isVisible) selectActionBarContainer.height else 0
-                recyclerView.setPadding(0, recyclerView.paddingTop, 0, bottom)
-            }
         }
     }
 
