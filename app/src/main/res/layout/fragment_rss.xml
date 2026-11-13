@@ -41,42 +41,11 @@
                 android:paddingTop="@dimen/bookshelf_title_row_margin_top"
                 android:paddingBottom="0dp">
 
-                <LinearLayout
-                    android:id="@+id/ll_rss_source_select"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/bookshelf_title_select_height"
-                    android:background="@drawable/bg_discover_embedded_action"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingEnd="0dp">
-
-                    <TextView
-                        android:id="@+id/tv_rss_source_select"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:includeFontPadding="false"
-                        android:maxLines="1"
-                        android:textColor="@color/primaryText"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        tools:text="默认订阅源" />
-
-                    <androidx.appcompat.widget.AppCompatImageView
-                        android:id="@+id/iv_rss_source_arrow"
-                        android:layout_width="@dimen/bookshelf_title_arrow_size"
-                        android:layout_height="@dimen/bookshelf_title_arrow_size"
-                        android:contentDescription="@string/rss"
-                        android:src="@drawable/ic_arrow_drop_down"
-                        app:tint="@color/primaryText" />
-
-                </LinearLayout>
-
-                <Space
+                <io.legado.app.ui.widget.RoundedTagBarView
+                    android:id="@+id/rv_rss_sources"
                     android:layout_width="0dp"
-                    android:layout_height="1dp"
+                    android:layout_height="@dimen/bookshelf_tag_bar_height"
+                    android:layout_marginEnd="8dp"
                     android:layout_weight="1" />
 
                 <androidx.appcompat.widget.AppCompatImageButton

@@ -33,7 +33,6 @@ import io.legado.app.help.source.sortUrls
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.applyUiBodyTypeface
-import io.legado.app.lib.theme.applyUiTitleTypeface
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.login.SourceLoginActivity
@@ -66,7 +65,7 @@ import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.transaction
 import io.legado.app.utils.visible
 import io.legado.app.utils.viewbindingdelegate.viewBinding
-import io.legado.app.ui.widget.SourceSelectDialog
+import io.legado.app.ui.widget.SourceSwitcherBar
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
@@ -241,23 +240,17 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
     }
 
     private fun initModernRssView() {
-        binding.tvRssSourceSelect.applyUiTitleTypeface(requireContext())
         binding.llRssSourceRow.applyStatusBarPadding(withInitialPadding = true)
         binding.swipeRefreshLayout.setColorSchemeColors(accentColor)
         binding.swipeRefreshLayout.setProgressViewOffset(true, (-28).dpToPx(), 56.dpToPx())
         binding.swipeRefreshLayout.setOnChildScrollUpCallback { _, _ ->
             currentRssScrollTarget()?.canScrollVertically(-1) == true
         }
-        val updateSourceNameWidth = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            binding.llRssSourceRow.post(::updateRssSourceNameWidth)
-        }
-        binding.llRssSourceRow.addOnLayoutChangeListener(updateSourceNameWidth)
-        binding.llRssSourceRow.post(::updateRssSourceNameWidth)
         binding.swipeRefreshLayout.setOnRefreshListener {
             refreshCurrentRssContent()
         }
-        binding.llRssSourceSelect.setOnClickListener {
-            showSourceSelector()
+        binding.rvRssSources.setOnTagClickListener { index ->
+            rssSources.getOrNull(index)?.let { selectSource(it, reload = true) }
         }
         binding.btnRssSourceSearch.setOnClickListener {
             openRssSearch()
@@ -268,20 +261,14 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
         binding.btnOpenRss.applyUiBodyTypeface(requireContext())
     }
 
-    private fun updateRssSourceNameWidth() {
-        val rowWidth = binding.llRssSourceRow.width
-        if (rowWidth <= 0) return
-        val actionsWidth = listOf(
-            binding.btnRssSourceSearch,
-            binding.btnRssMore
-        ).filter { it.isVisible }.sumOf {
-            it.measuredWidth.takeIf { width -> width > 0 } ?: it.layoutParams.width
-        }
-        val spacing = 36.dpToPx()
-        val maxWidth = (rowWidth - actionsWidth - spacing).coerceIn(96.dpToPx(), 190.dpToPx())
-        if (binding.tvRssSourceSelect.maxWidth != maxWidth) {
-            binding.tvRssSourceSelect.maxWidth = maxWidth
-        }
+    private fun renderRssSourceBar() {
+        val (names, index) = SourceSwitcherBar.build(
+            rssSources,
+            selectedRssSource?.sourceUrl,
+            { it.sourceUrl },
+            { it.sourceName }
+        )
+        binding.rvRssSources.submitItems(names.map { RoundedTagBarView.Item(it) }, index)
     }
 
     private fun showRssMoreMenu() {
@@ -515,6 +502,7 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
                 binding.swipeRefreshLayout.isRefreshing = false
                 rssSources.clear()
                 rssSources.addAll(sources)
+                renderRssSourceBar()
                 val keep = selectedRssSource?.sourceUrl?.let { key ->
                     sources.firstOrNull { it.sourceUrl == key }
                 }
@@ -539,9 +527,8 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
         val changed = selectedRssSource?.sourceUrl != source.sourceUrl
         selectedRssSource = source
         AppConfig.modernRssSourceUrl = source.sourceUrl
-        binding.tvRssSourceSelect.text = source.sourceName
+        binding.rvRssSources.setSelectedIndex(rssSources.indexOfFirst { it.sourceUrl == source.sourceUrl })
         binding.btnRssSourceSearch.isVisible = !source.searchUrl.isNullOrBlank()
-        binding.llRssSourceRow.post(::updateRssSourceNameWidth)
         if (changed) {
             selectedTagIndex = 0
         }
@@ -765,7 +752,7 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
     private fun renderEmptyState() {
         selectedRssSource = null
         currentSorts.clear()
-        binding.tvRssSourceSelect.text = getString(R.string.rss)
+        binding.rvRssSources.submitItems(emptyList(), -1)
         binding.btnRssSourceSearch.gone()
         binding.swipeRefreshLayout.isEnabled = true
         renderRssTabs()
@@ -792,24 +779,6 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
                 initialPadding + windowInsets.navigationBarHeight + webBottomSpace
             )
             windowInsets
-        }
-    }
-
-    private fun showSourceSelector() {
-        if (rssSources.isEmpty()) return
-        SourceSelectDialog.show(
-            context = requireContext(),
-            title = getString(R.string.rss),
-            items = rssSources,
-            selectedKey = selectedRssSource?.sourceUrl,
-            displayName = { it.getDisplayNameGroup() },
-            searchTexts = {
-                listOfNotNull(it.sourceName, it.sourceUrl, it.sourceGroup)
-            },
-            searchHint = getString(R.string.screen),
-            itemKey = { it.sourceUrl }
-        ) {
-            selectSource(it, reload = true)
         }
     }
 
