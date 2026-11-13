@@ -38,7 +38,6 @@ import io.legado.app.help.source.clearExploreKindsCache
 import io.legado.app.help.source.exploreKinds
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.applyUiTitleTypeface
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.model.webBook.WebBook
@@ -53,7 +52,7 @@ import io.legado.app.ui.main.MainFragmentInterface
 import io.legado.app.ui.widget.ExpandableTagSelector
 import io.legado.app.ui.widget.RoundedTagBarView
 import io.legado.app.ui.widget.RowUiDialog
-import io.legado.app.ui.widget.SourceSelectDialog
+import io.legado.app.ui.widget.SourceSwitcherBar
 import io.legado.app.ui.widget.glass.GlassBarHelper
 import io.legado.app.utils.applyMainBottomBarPadding
 import io.legado.app.utils.applyStatusBarPadding
@@ -472,14 +471,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
 
     private fun bindDiscoverSourceSelector() {
-        binding.tvDiscoverSourceSelect.applyUiTitleTypeface(requireContext())
-        val updateSourceNameWidth = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
-        }
-        binding.llDiscoverSourceRow.addOnLayoutChangeListener(updateSourceNameWidth)
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
-        binding.llDiscoverSourceSelect.setOnClickListener {
-            showDiscoverSourceMenu()
+        binding.rvDiscoverSources.setOnTagClickListener { index ->
+            discoverSources.getOrNull(index)?.let { selectDiscoverSource(it) }
         }
         binding.btnDiscoverSourceSearch.setOnClickListener {
             openDiscoverSearch()
@@ -492,21 +485,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
         updateDiscoverTagFilterButtonState()
         updateDiscoverSearchButtonState()
-    }
-
-    private fun updateDiscoverSourceNameWidth() {
-        val rowWidth = binding.llDiscoverSourceRow.width
-        if (rowWidth <= 0) return
-        val actionsWidth = listOf(
-            binding.btnDiscoverSourceSearch,
-            binding.btnDiscoverTagFilter,
-            binding.btnDiscoverMore
-        ).filter { it.isVisible }.sumOf { it.measuredWidth.takeIf { width -> width > 0 } ?: it.layoutParams.width }
-        val spacing = 36.dpToPx()
-        val maxWidth = (rowWidth - actionsWidth - spacing).coerceIn(96.dpToPx(), 190.dpToPx())
-        if (binding.tvDiscoverSourceSelect.maxWidth != maxWidth) {
-            binding.tvDiscoverSourceSelect.maxWidth = maxWidth
-        }
     }
 
     private fun openSelectedSourceLogin() {
@@ -523,7 +501,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
 
     private fun updateDiscoverLoginButtonState() {
         binding.btnDiscoverMore.alpha = 1f
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
     }
 
     private fun showDiscoverMoreMenu() {
@@ -606,7 +583,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                     return@launch
                 }
                 selectedDiscoverSource = fullSource
-                updateDiscoverSourceTitle()
+                syncDiscoverSourceBarSelection()
                 updateDiscoverLoginButtonState()
                 updateDiscoverSearchButtonState()
                 loadDiscoverKindsAndDefault()
@@ -624,7 +601,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         binding.btnDiscoverSourceSearch.isVisible = canSearch
         binding.btnDiscoverSourceSearch.isEnabled = canSearch
         binding.btnDiscoverSourceSearch.alpha = if (canSearch) 1f else 0.45f
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
     }
 
     private fun openDiscoverSearch() {
@@ -652,6 +628,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 .collect { list ->
                     discoverSources.clear()
                     discoverSources.addAll(list)
+                    renderDiscoverSourceBar()
                     if (discoverSources.isEmpty()) {
                         selectedDiscoverSourcePart = null
                         selectedDiscoverSource = null
@@ -664,7 +641,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                         clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
                         renderDiscoverTags(emptyList(), -1)
                         renderDiscoverMajorGroups()
-                        binding.tvDiscoverSourceSelect.text = getString(R.string.explore_empty)
+                        binding.rvDiscoverSources.submitItems(emptyList(), -1)
                         updateDiscoverLoginButtonState()
                         updateDiscoverSearchButtonState()
                         updateDiscoverTagFilterButtonState()
@@ -688,7 +665,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                             bookSourceGroup = selected.bookSourceGroup
                             bookSourceType = selected.bookSourceType
                         }
-                        updateDiscoverSourceTitle()
+                        syncDiscoverSourceBarSelection()
                         updateDiscoverLoginButtonState()
                         updateDiscoverSearchButtonState()
                     }
@@ -726,26 +703,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
     }
 
-    private fun showDiscoverSourceMenu() {
-        if (discoverSources.isEmpty()) return
-        SourceSelectDialog.show(
-            context = requireContext(),
-            title = getString(R.string.book_source),
-            items = discoverSources,
-            selectedKey = selectedDiscoverSourcePart?.bookSourceUrl,
-            searchHint = getString(R.string.screen_find),
-            displayName = { it.getDisPlayNameGroup() },
-            searchTexts = {
-                listOfNotNull(it.bookSourceName, it.bookSourceUrl, it.bookSourceGroup)
-            },
-            itemKey = { it.bookSourceUrl }
-        ) {
-            selectDiscoverSource(it)
-        }
-    }
-
     private fun selectDiscoverSource(source: BookSourcePart) {
         selectedDiscoverSourcePart = source
+        syncDiscoverSourceBarSelection()
         AppConfig.modernDiscoverySourceUrl = source.bookSourceUrl
         updateDiscoverLoginButtonState()
         tagFilterPopup?.dismiss()
@@ -779,7 +739,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                     return@launch
                 }
                 selectedDiscoverSource = fullSource
-                updateDiscoverSourceTitle()
+                syncDiscoverSourceBarSelection()
                 updateDiscoverSearchButtonState()
                 loadDiscoverKindsAndDefault()
             } finally {
@@ -790,11 +750,21 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
     }
 
-    private fun updateDiscoverSourceTitle() {
-        val name = selectedDiscoverSourcePart?.bookSourceName
-            ?: getString(R.string.discovery)
-        binding.tvDiscoverSourceSelect.text = name
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
+    private fun renderDiscoverSourceBar() {
+        val (names, index) = SourceSwitcherBar.build(
+            discoverSources,
+            selectedDiscoverSourcePart?.bookSourceUrl,
+            { it.bookSourceUrl },
+            { it.bookSourceName }
+        )
+        binding.rvDiscoverSources.submitItems(names.map { RoundedTagBarView.Item(it) }, index)
+    }
+
+    private fun syncDiscoverSourceBarSelection() {
+        val index = discoverSources.indexOfFirst {
+            it.bookSourceUrl == selectedDiscoverSourcePart?.bookSourceUrl
+        }
+        binding.rvDiscoverSources.setSelectedIndex(index)
     }
 
     private suspend fun loadDiscoverKindsAndDefault() {
