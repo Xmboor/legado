@@ -474,6 +474,10 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         binding.rvDiscoverSources.setOnTagClickListener { index ->
             discoverSources.getOrNull(index)?.let { selectDiscoverSource(it) }
         }
+        binding.rvDiscoverSources.setOnTagLongClickListener { index ->
+            discoverSources.getOrNull(index)?.let { deleteSource(it) }
+            true
+        }
         binding.btnDiscoverSourceSearch.setOnClickListener {
             openDiscoverSearch()
         }

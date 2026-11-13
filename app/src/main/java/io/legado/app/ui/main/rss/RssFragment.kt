@@ -252,6 +252,10 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
         binding.rvRssSources.setOnTagClickListener { index ->
             rssSources.getOrNull(index)?.let { selectSource(it, reload = true) }
         }
+        binding.rvRssSources.setOnTagLongClickListener { index ->
+            rssSources.getOrNull(index)?.let { del(it) }
+            true
+        }
         binding.btnRssSourceSearch.setOnClickListener {
             openRssSearch()
         }
