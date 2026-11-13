@@ -1,9 +1,12 @@
 package io.legado.app.ui.rss.source.manage
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.graphics.ColorUtils
 import androidx.core.os.bundleOf
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -12,6 +15,8 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.RssSource
 import io.legado.app.databinding.ItemRssSourceBinding
+import io.legado.app.lib.theme.primaryColor
+import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.showPopupMenu
@@ -72,22 +77,58 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
     ) {
         binding.run {
             if (payloads.isEmpty()) {
-                cbSource.text = item.getDisplayNameGroup()
+                tvName.text = item.getDisplayNameGroup()
                 swtEnabled.isChecked = item.enabled
                 cbSource.isChecked = selected.contains(item)
+                upCardBackground(binding, item)
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
                     bundle.keySet().forEach {
                         when (it) {
-                            "upName" -> cbSource.text = item.getDisplayNameGroup()
-                            "enabled" -> swtEnabled.isChecked = bundle.getBoolean("enabled")
-                            "selected" -> cbSource.isChecked = selected.contains(item)
+                            "upName" -> tvName.text = item.getDisplayNameGroup()
+                            "enabled" -> {
+                                swtEnabled.isChecked = bundle.getBoolean("enabled")
+                                upCardBackground(binding, item)
+                            }
+                            "selected" -> {
+                                cbSource.isChecked = selected.contains(item)
+                                upCardBackground(binding, item)
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun upCardBackground(binding: ItemRssSourceBinding, item: RssSource) {
+        val density = context.resources.displayMetrics.density
+        val isSelected = selected.contains(item)
+        val strokeColor = if (item.enabled) context.primaryColor else context.secondaryTextColor
+        val fillColor = when {
+            isSelected -> ColorUtils.setAlphaComponent(context.primaryColor, 60)
+            item.enabled -> ColorUtils.setAlphaComponent(context.primaryColor, 20)
+            else -> Color.TRANSPARENT
+        }
+        binding.root.background = GradientDrawable().apply {
+            cornerRadius = 12f * density
+            setColor(fillColor)
+            setStroke(density.toInt().coerceAtLeast(1), strokeColor)
+        }
+    }
+
+    fun toggleSelection(item: RssSource) {
+        if (selected.contains(item)) {
+            selected.remove(item)
+        } else {
+            selected.add(item)
+        }
+        val position = getItems().indexOfFirst { it.sourceUrl == item.sourceUrl }
+        if (position >= 0) {
+            notifyItemChanged(position, bundleOf(Pair("selected", null)))
+        }
+        callBack.upCountView()
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemRssSourceBinding) {
@@ -168,6 +209,7 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
             R.menu.rss_source_item,
         ) { menuItem ->
             when (menuItem.itemId) {
+                R.id.menu_select -> toggleSelection(source)
                 R.id.menu_top -> callBack.toTop(source)
                 R.id.menu_bottom -> callBack.toBottom(source)
                 R.id.menu_del -> {
