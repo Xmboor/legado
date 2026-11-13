@@ -1,9 +1,14 @@
 package io.legado.app.lib.prefs.fragment
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
+import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.DialogFragment
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
@@ -16,6 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.lib.prefs.EditTextPreferenceDialog
 import io.legado.app.lib.prefs.ListPreferenceDialog
 import io.legado.app.lib.prefs.MultiSelectListPreferenceDialog
+import io.legado.app.lib.theme.UiCorner
+import io.legado.app.lib.theme.accentColor
 import io.legado.app.utils.applyNavigationBarPadding
 
 abstract class PreferenceFragment : PreferenceFragmentCompat() {
@@ -42,6 +49,7 @@ abstract class PreferenceFragment : PreferenceFragmentCompat() {
         val preference = findPreference<Preference>(targetKey) ?: return false
         listView.post {
             scrollPreferenceToTop(preference)
+            highlightPreference(preference)
             activity?.intent?.removeExtra("targetKey")
         }
         return true
@@ -60,6 +68,43 @@ abstract class PreferenceFragment : PreferenceFragmentCompat() {
             }
         }
         scrollToPreference(preference)
+    }
+
+    private fun highlightPreference(preference: Preference) {
+        val adapter = listView.adapter as? PreferenceGroupAdapter ?: return
+        val index = (0 until adapter.itemCount).firstOrNull { adapter.getItem(it) == preference }
+            ?: return
+        val radius = UiCorner.actionRadius(requireContext())
+        val tint = ColorUtils.setAlphaComponent(accentColor, 70)
+        listView.post {
+            val holder = listView.findViewHolderForAdapterPosition(index) ?: return@post
+            val itemView = holder.itemView
+            val original = itemView.background
+            val animator = ValueAnimator.ofFloat(1f, 0f).apply {
+                duration = 1100L
+                addUpdateListener { anim ->
+                    if (holder.bindingAdapterPosition != index) {
+                        anim.cancel()
+                        return@addUpdateListener
+                    }
+                    val alpha = anim.animatedValue as Float
+                    itemView.background = GradientDrawable().apply {
+                        cornerRadius = radius
+                        setColor(ColorUtils.setAlphaComponent(tint, (alpha * 70).toInt()))
+                    }
+                }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        if (holder.bindingAdapterPosition == index) itemView.background = original
+                    }
+
+                    override fun onAnimationCancel(animation: Animator) {
+                        if (holder.bindingAdapterPosition == index) itemView.background = original
+                    }
+                })
+            }
+            animator.start()
+        }
     }
 
     /**
