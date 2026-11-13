@@ -2,7 +2,6 @@ package io.legado.app.ui.config
 
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -81,9 +80,6 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
                 titleBarGlassView, titleBarShellOverlay, titleBar,
                 configFrameLayout, 0f, isTopBar = true
             )
-            titleBarContainer.doOnLayout {
-                configFrameLayout.setPadding(0, titleBarContainer.height, 0, 0)
-            }
         }
     }
 

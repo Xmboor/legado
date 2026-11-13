@@ -362,7 +362,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         }
 
     val showRSS: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showRss, false)
+        get() = appCtx.getPrefBoolean(PreferKey.showRss, true)
 
     val showReadRecord: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showReadRecord, true)
@@ -1214,7 +1214,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         }
 
     val moveSearchToBookshelf: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.moveSearchToBookshelf, false)
+        get() = appCtx.getPrefBoolean(PreferKey.moveSearchToBookshelf, true)
 
     var readUrlInBrowser: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.readUrlOpenInBrowser)
