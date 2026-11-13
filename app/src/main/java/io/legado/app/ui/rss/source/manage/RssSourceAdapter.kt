@@ -15,6 +15,7 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.RssSource
 import io.legado.app.databinding.ItemRssSourceBinding
+import io.legado.app.lib.theme.UiCorner
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
@@ -106,13 +107,14 @@ class RssSourceAdapter(context: Context, val callBack: CallBack) :
         val density = context.resources.displayMetrics.density
         val isSelected = selected.contains(item)
         val strokeColor = if (item.enabled) context.primaryColor else context.secondaryTextColor
+        val alphaScale = UiCorner.layoutAlpha()
         val fillColor = when {
-            isSelected -> ColorUtils.setAlphaComponent(context.primaryColor, 60)
-            item.enabled -> ColorUtils.setAlphaComponent(context.primaryColor, 20)
+            isSelected -> ColorUtils.setAlphaComponent(context.primaryColor, (60 * alphaScale).toInt())
+            item.enabled -> ColorUtils.setAlphaComponent(context.primaryColor, (20 * alphaScale).toInt())
             else -> Color.TRANSPARENT
         }
         binding.root.background = GradientDrawable().apply {
-            cornerRadius = 12f * density
+            cornerRadius = UiCorner.scaledDp(12f)
             setColor(fillColor)
             setStroke(density.toInt().coerceAtLeast(1), strokeColor)
         }
