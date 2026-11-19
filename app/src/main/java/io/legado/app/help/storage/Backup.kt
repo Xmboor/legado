@@ -32,6 +32,7 @@ import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.normalizeFileName
 import io.legado.app.utils.openOutputStream
 import io.legado.app.utils.outputStream
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.writeToOutputStream
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.currentCoroutineContext
@@ -291,9 +292,11 @@ object Backup {
             try {
                 AppWebDav.backUpWebDav(zipFileName, onWebDavUploadProgress)
             } catch (e: Exception) {
+                // 本地备份已经写盘成功，云端上传失败不应让整个备份判为失败。
+                // 有进度回调时说明是用户主动备份，明确提示；自动备份（无回调）仅记录日志，避免打扰。
                 AppLog.put("上传备份至webdav失败\n$e", e)
                 if (onWebDavUploadProgress != null) {
-                    throw e
+                    appCtx.toastOnUi("本地备份已完成，但云端上传失败：${e.localizedMessage}")
                 }
             }
         }

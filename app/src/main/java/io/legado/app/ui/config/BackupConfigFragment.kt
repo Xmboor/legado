@@ -24,6 +24,7 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.documentfile.provider.DocumentFile
 import io.legado.app.R
+import io.legado.app.databinding.DialogMultipleEditTextBinding
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
 import io.legado.app.exception.NoStackTraceException
@@ -163,6 +164,12 @@ class BackupConfigFragment : PreferenceFragment(),
         upPreferenceSummary(PreferKey.webDavDir, AppConfig.webDavDir)
         upPreferenceSummary(PreferKey.webDavDeviceName, AppConfig.webDavDeviceName)
         upPreferenceSummary(PreferKey.backupPath, getPrefString(PreferKey.backupPath))
+        // 单击 = 一键云备份/恢复；长按 = 本地备份 / 从本地文件恢复（可选入口）
+        findPreference<io.legado.app.lib.prefs.Preference>("web_dav_backup")
+            ?.onLongClick {
+                backup()
+                true
+            }
         findPreference<io.legado.app.lib.prefs.Preference>("web_dav_restore")
             ?.onLongClick {
                 restoreFromLocal()
@@ -176,8 +183,26 @@ class BackupConfigFragment : PreferenceFragment(),
         preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
         listView.setEdgeEffectColor(primaryColor)
         activity?.addMenuProvider(this, viewLifecycleOwner)
-        if (!LocalConfig.backupHelpVersionIsLast) {
-            showHelp("webDavHelp")
+        // 帮助文档改为仅通过右上角 ❓ 手动打开：
+        // 自动弹出的 TextDialog(MD) 在部分机型上会渲染成空白覆盖层，遮挡设置列表。
+        // 布局完成后的自检：仅当列表真的没渲染出子项时，弹出诊断显示真实状态，
+        // 便于定位「数据正常但列表空白」的渲染层问题；正常时不打扰用户。
+        listView.post {
+            val childCount = listView.childCount
+            val adapterCount = listView.adapter?.itemCount ?: -1
+            val h = listView.measuredHeight
+            if (childCount == 0 && adapterCount > 0) {
+                val lm = listView.layoutManager?.javaClass?.simpleName ?: "null"
+                alert(title = "备份页渲染自检") {
+                    setMessage(
+                        "列表未渲染子项，请截图反馈：\n" +
+                            "版本 ${io.legado.app.BuildConfig.VERSION_NAME}(${io.legado.app.BuildConfig.VERSION_CODE})\n" +
+                            "adapter项数=$adapterCount 子视图=$childCount\n" +
+                            "列表高度=$h 布局管理=$lm"
+                    )
+                    okButton()
+                }
+            }
         }
     }
 
@@ -269,11 +294,232 @@ class BackupConfigFragment : PreferenceFragment(),
             PreferKey.backupPath -> selectBackupPath.launch()
             PreferKey.restoreIgnore -> backupIgnore()
             "webDavProvider" -> showWebDavProviderDialog()
-            "web_dav_backup" -> backup()
-            "web_dav_restore" -> restore()
+            "webDavTest" -> testWebDavConnection()
+            "web_dav_backup" -> oneKeyBackup()
+            "web_dav_restore" -> oneKeyRestore()
             "import_old" -> restoreOld.launch()
         }
         return super.onPreferenceTreeClick(preference)
+    }
+
+    /**
+     * 测试 WebDAV 连接：校验当前填写的坚果云 / 飞牛 / 自定义配置是否可用。
+     * 连接成功后 authorization 可用，一键云备份/恢复才有意义。
+     */
+    private fun testWebDavConnection() {
+        if (!hasWebDavAccount()) {
+            toastOnUi("请先填写 WebDAV 账号和密码")
+            return
+        }
+        waitDialog.setText("正在连接 WebDAV…")
+        waitDialog.setCancelButton {
+            confirmStopTask { backupJob?.cancel() }
+        }
+        waitDialog.show()
+        Coroutine.async {
+            AppWebDav.testConnection().getOrThrow()
+        }.onSuccess {
+            toastOnUi("连接成功，可以使用一键云备份/恢复")
+        }.onError {
+            AppLog.put("测试 WebDAV 连接失败\n${it.localizedMessage}", it)
+            toastOnUi("连接失败：${it.localizedMessage}")
+        }.onFinally {
+            waitDialog.dismiss()
+            waitDialog.hideCancelButton()
+        }
+    }
+
+    /**
+     * 一键云备份：不弹目录选择、不弹多选，直接全量备份并上传云端。
+     * 点击「备份」默认走这里；长按「备份」仍可进入旧的本地目录备份流程。
+     */
+    fun oneKeyBackup() {
+        if (!hasWebDavAccount()) {
+            toastOnUi("请先在上方填写 WebDAV 账号和密码（坚果云需填应用密码）")
+            return
+        }
+        backupJob?.cancel()
+        var lastProgress = -1
+        var lastMegabyte = -1L
+        backupJob = lifecycleScope.launch {
+            val progressDialog = progressDialog(
+                title = getString(R.string.backup),
+                message = "正在备份并上传到云端…"
+            ) {
+                isIndeterminate = true
+                max = PROGRESS_MAX
+                setCancelConfirmButton { backupJob?.cancel() }
+            }
+            val onUploadProgress: (Long, Long) -> Unit = progress@{ finished, total ->
+                val progress = if (total > 0) {
+                    (finished * PROGRESS_MAX / total).toInt().coerceIn(0, PROGRESS_MAX)
+                } else {
+                    -1
+                }
+                val megabyte = finished / BYTES_PER_MB
+                if (progress >= 0) {
+                    if (progress == lastProgress && finished < total) return@progress
+                    lastProgress = progress
+                } else {
+                    if (megabyte == lastMegabyte) return@progress
+                    lastMegabyte = megabyte
+                }
+                lifecycleScope.launch(Main) {
+                    progressDialog.updateTransferProgress("上传云端", finished, total, progress)
+                }
+            }
+            try {
+                withContext(IO) {
+                    // 先刷新连接，避免 authorize 为 null 导致静默不上传
+                    AppWebDav.upConfig()
+                    if (!AppWebDav.isOk) {
+                        throw NoStackTraceException("WebDAV 未连接成功，请点击“测试连接”检查配置")
+                    }
+                    Backup.backupLocked(
+                        context = requireContext(),
+                        path = null,
+                        onWebDavUploadProgress = onUploadProgress,
+                        targets = null
+                    )
+                }
+                appCtx.toastOnUi("已备份到云端")
+            } catch (e: Throwable) {
+                ensureActive()
+                AppLog.put("一键云备份出错\n${e.localizedMessage}", e)
+                appCtx.toastOnUi("云备份失败：${e.localizedMessage}")
+            } finally {
+                progressDialog.dismiss()
+            }
+        }
+    }
+
+    /**
+     * 一键云恢复：列出云端备份 → 选择 → 下载 → 全量恢复（不弹项目多选）。
+     */
+    fun oneKeyRestore() {
+        if (!hasWebDavAccount()) {
+            toastOnUi("请先在上方填写 WebDAV 账号和密码")
+            return
+        }
+        waitDialog.setText(R.string.loading)
+        waitDialog.setCancelButton { confirmStopTask { restoreJob?.cancel() } }
+        waitDialog.show()
+        Coroutine.async {
+            restoreJob = coroutineContext[Job]
+            withContext(IO) { AppWebDav.upConfig() }
+            if (!AppWebDav.isOk) {
+                throw NoStackTraceException("WebDAV 未连接成功，请点击“测试连接”检查配置")
+            }
+            val names = withContext(IO) { AppWebDav.getBackupNames() }
+            if (names.isEmpty()) {
+                throw NoStackTraceException("云端没有找到备份文件")
+            }
+            withContext(Main) {
+                requireContext().selector(
+                    title = getString(R.string.select_restore_file),
+                    items = names
+                ) { _, index ->
+                    if (index in names.indices) {
+                        listView.post { restoreCloudBackup(names[index]) }
+                    }
+                }
+            }
+        }.onError {
+            AppLog.put("一键云恢复出错\n${it.localizedMessage}", it)
+            if (context == null) return@onError
+            alert {
+                setTitle(R.string.restore)
+                setMessage("云端恢复失败：${it.localizedMessage}\n可从本地备份文件恢复。")
+                okButton { restoreFromLocal() }
+                cancelButton()
+            }
+        }.onFinally {
+            waitDialog.dismiss()
+            waitDialog.hideCancelButton()
+        }
+    }
+
+    /**
+     * 云盘同步入口（坚果云 / 飞牛 fnOS）：一个页面内完成配置、测试、备份、恢复。
+     * 解决用户「在备份/恢复页面找不到云盘选项、无法操作」的问题。
+     */
+    private fun showCloudSyncDialog(isNutstore: Boolean) {
+        val providerName = if (isNutstore) "坚果云" else "飞牛 fnOS"
+        val configured = hasWebDavAccount()
+        val actions = mutableListOf(
+            if (configured) "配置账号密码（当前已填写）" else "① 配置账号密码",
+            if (configured) "测试连接" else "② 测试连接",
+            if (configured) "③ 立即备份到云端" else "立即备份（先配置账号）",
+            if (configured) "④ 从云端恢复" else "从云端恢复（先配置账号）"
+        )
+        alert(title = "${providerName} 同步") {
+            setMessage(
+                if (isNutstore) {
+                    "坚果云 WebDAV 已预设，只需填账号和「应用密码」（非登录密码）。\n" +
+                            "应用密码获取：坚果云网页端 → 设置 → 安全选项 → 第三方应用管理 → 添加应用。"
+                } else {
+                    "飞牛 fnOS 需先在 NAS 开启 WebDAV 服务，地址格式 http(s)://NAS地址:端口/dav/。"
+                }
+            )
+            items(actions) { _, index ->
+                when (index) {
+                    0 -> showCloudCredentialDialog(isNutstore)
+                    1 -> testWebDavConnection()
+                    2 -> if (configured) oneKeyBackup() else {
+                        toastOnUi("请先配置账号密码")
+                        showCloudCredentialDialog(isNutstore)
+                    }
+                    3 -> if (configured) oneKeyRestore() else {
+                        toastOnUi("请先配置账号密码")
+                        showCloudCredentialDialog(isNutstore)
+                    }
+                }
+            }
+            cancelButton()
+        }
+    }
+
+    /**
+     * 就地填写账号 + 密码（坚果云为应用密码），填入预设地址并刷新连接配置。
+     */
+    private fun showCloudCredentialDialog(isNutstore: Boolean) {
+        val providerName = if (isNutstore) "坚果云" else "飞牛 fnOS"
+        val binding = DialogMultipleEditTextBinding.inflate(layoutInflater).apply {
+            layout1.hint = if (isNutstore) "坚果云账号（登录邮箱）" else "飞牛用户名"
+            edit1.setText(getPrefString(PreferKey.webDavAccount))
+            edit1.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            layout2.hint = if (isNutstore) "应用密码（非登录密码）" else "飞牛密码"
+            edit2.setText(getPrefString(PreferKey.webDavPassword))
+            edit2.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            layout2.visibility = View.VISIBLE
+        }
+        alert(title = "${providerName} 账号密码") {
+            setCustomView(binding.root)
+            cancelButton()
+            okButton {
+                val account = binding.edit1.text.toString().trim()
+                val password = binding.edit2.text.toString()
+                if (account.isBlank() || password.isBlank()) {
+                    toastOnUi("账号和密码不能为空")
+                    return@okButton
+                }
+                // 填入对应预设地址
+                val url = if (isNutstore) {
+                    "https://dav.jianguoyun.com/dav/"
+                } else {
+                    getPrefString(PreferKey.webDavUrl).takeIf { !it.isNullOrBlank() }
+                        ?: "http://192.168.1.100:5005/dav/"
+                }
+                appCtx.putPrefString(PreferKey.webDavUrl, url)
+                appCtx.putPrefString(PreferKey.webDavAccount, account)
+                appCtx.putPrefString(PreferKey.webDavPassword, password)
+                upPreferenceSummary(PreferKey.webDavUrl, url)
+                upPreferenceSummary(PreferKey.webDavAccount, account)
+                viewModel.upWebDavConfig()
+                toastOnUi("已保存，正在验证连接…")
+                testWebDavConnection()
+            }
+        }
     }
 
     /**
@@ -489,6 +735,70 @@ class BackupConfigFragment : PreferenceFragment(),
             }
         } else {
             throw NoStackTraceException("Web dav no back up file")
+        }
+    }
+
+    /**
+     * 一键云恢复的执行体：下载指定云端备份并全量恢复，跳过项目多选。
+     */
+    private fun restoreCloudBackup(name: String) {
+        restoreJob?.cancel()
+        val progressDialog = progressDialog(
+            title = getString(R.string.restore),
+            message = "正在下载并恢复云端备份…"
+        ) {
+            isIndeterminate = true
+            max = PROGRESS_MAX
+            setCancelConfirmButton { restoreJob?.cancel() }
+        }
+        var lastProgress = -1
+        var lastMegabyte = -1L
+        val onDownloadProgress: (Long, Long) -> Unit = progress@{ finished, total ->
+            val progress = if (total > 0) {
+                (finished * PROGRESS_MAX / total).toInt().coerceIn(0, PROGRESS_MAX)
+            } else {
+                -1
+            }
+            val megabyte = finished / BYTES_PER_MB
+            if (progress >= 0) {
+                if (progress == lastProgress && finished < total) return@progress
+                lastProgress = progress
+            } else {
+                if (megabyte == lastMegabyte) return@progress
+                lastMegabyte = megabyte
+            }
+            lifecycleScope.launch(Main) {
+                progressDialog.updateTransferProgress("下载云端备份", finished, total, progress)
+            }
+        }
+        restoreJob = lifecycleScope.launch {
+            try {
+                withContext(IO) {
+                    AppWebDav.downloadBackupToLocal(
+                        name = name,
+                        onProgress = onDownloadProgress,
+                        onDownloadFinish = {
+                            lifecycleScope.launch(Main) {
+                                progressDialog.showIndeterminateMessage("读取备份…")
+                            }
+                        }
+                    )
+                }
+                withContext(Main) {
+                    progressDialog.showIndeterminateMessage("恢复中…")
+                }
+                withContext(IO) {
+                    Restore.restoreLocked(Backup.backupPath)
+                    LocalConfig.lastBackup = System.currentTimeMillis()
+                }
+                appCtx.toastOnUi(R.string.restore_success)
+            } catch (e: Throwable) {
+                ensureActive()
+                AppLog.put("一键云恢复出错\n${e.localizedMessage}", e)
+                appCtx.toastOnUi("云恢复失败：${e.localizedMessage}")
+            } finally {
+                progressDialog.dismiss()
+            }
         }
     }
 

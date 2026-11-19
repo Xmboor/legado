@@ -630,6 +630,12 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 .conflate()
                 .distinctUntilChanged(::areBookSourcePartListsSame)
                 .collect { list ->
+                    // 记录删除前选中源在旧列表中的位置，用于删除后保持相邻位置（不跳回第一个）
+                    val previousSelectedUrl = selectedDiscoverSourcePart?.bookSourceUrl
+                        ?: AppConfig.modernDiscoverySourceUrl
+                    val previousIndex = previousSelectedUrl?.let { key ->
+                        discoverSources.indexOfFirst { it.bookSourceUrl == key }
+                    } ?: -1
                     discoverSources.clear()
                     discoverSources.addAll(list)
                     renderDiscoverSourceBar()
@@ -654,8 +660,14 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                     }
                     val keepSource = selectedDiscoverSourcePart?.bookSourceUrl
                         ?: AppConfig.modernDiscoverySourceUrl
-                    val selected = discoverSources.firstOrNull { it.bookSourceUrl == keepSource }
-                        ?: discoverSources.first()
+                    val kept = discoverSources.firstOrNull { it.bookSourceUrl == keepSource }
+                    val selected = kept ?: if (previousIndex >= 0 && discoverSources.isNotEmpty()) {
+                        // 当前源被删除：选中原位置的相邻源，而不是跳回第一个
+                        discoverSources[previousIndex.coerceAtMost(discoverSources.lastIndex)]
+                    } else {
+                        // 首次进入（无记忆选中）仍默认选第一个
+                        discoverSources.first()
+                    }
                     if (selectedDiscoverSourcePart?.bookSourceUrl != selected.bookSourceUrl
                         || discoverTagItems.isEmpty()
                     ) {

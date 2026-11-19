@@ -7,6 +7,7 @@ import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.EventBus
 import io.legado.app.databinding.ActivityConfigBinding
+import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.read.config.MoreConfigDialog
 import io.legado.app.ui.book.read.config.ReadAloudConfigDialog
@@ -76,10 +77,12 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
 
     private fun setupGlass() {
         binding.run {
-            GlassBarHelper.bind(
-                titleBarGlassView, titleBarShellOverlay, titleBar,
-                configFrameLayout, 0f, isTopBar = true
-            )
+            // 修复设置页空白：此 fork 的液态玻璃会把 configFrameLayout（Fragment 内容容器）
+            // 作为 RenderEffect 渲染源，在部分机型/系统版本上导致内容区绘制为空白。
+            // 设置页统一改用实色标题栏，彻底规避该问题（功能不受影响）。
+            titleBarGlassView.visibility = android.view.View.GONE
+            titleBarShellOverlay.visibility = android.view.View.GONE
+            titleBar.setBackgroundColor(primaryColor)
         }
     }
 

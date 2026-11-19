@@ -11,8 +11,16 @@
 
         <io.legado.app.lib.prefs.Preference
             android:key="webDavProvider"
-            android:summary="坚果云 / 飞牛 fnOS / 自定义，点击快速填入地址"
-            android:title="备份服务商预设"
+            android:summary="坚果云 / 飞牛 fnOS / 自定义，点此配置账号密码"
+            android:title="坚果云 / 飞牛 云盘配置"
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
+            android:key="webDavTest"
+            android:summary="校验地址/账号/密码是否可用，配置后先点这里"
+            android:title="测试云同步连接"
             app:allowDividerAbove="false"
             app:allowDividerBelow="false"
             app:iconSpaceReserved="false" />
@@ -93,13 +101,13 @@
 
         <io.legado.app.lib.prefs.Preference
             android:key="web_dav_backup"
-            android:summary="@string/backup_summary"
+            android:summary="单击：一键备份到云端；长按：选择本地目录备份"
             android:title="@string/backup"
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.Preference
             android:key="web_dav_restore"
-            android:summary="@string/restore_summary"
+            android:summary="单击：从云端一键恢复；长按：从本地文件恢复"
             android:title="@string/restore"
             app:iconSpaceReserved="false" />
 

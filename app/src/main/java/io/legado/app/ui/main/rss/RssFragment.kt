@@ -504,6 +504,11 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
                 AppLog.put("订阅界面更新数据出错", it)
             }.flowOn(IO).collect { sources ->
                 binding.swipeRefreshLayout.isRefreshing = false
+                // 记录删除前选中源在旧列表中的位置，用于删除后保持相邻位置（不跳回第一个）
+                val previousSelectedUrl = selectedRssSource?.sourceUrl ?: AppConfig.modernRssSourceUrl
+                val previousIndex = previousSelectedUrl?.let { key ->
+                    rssSources.indexOfFirst { it.sourceUrl == key }
+                } ?: -1
                 rssSources.clear()
                 rssSources.addAll(sources)
                 renderRssSourceBar()
@@ -517,9 +522,18 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss), MainF
                 } else {
                     null
                 }
+                // 当前源被删除且无记忆可恢复时，选中原位置的相邻源，而不是跳回第一个
+                val neighbor = if (keep == null && remembered == null && searchKey.isNullOrEmpty()
+                    && previousIndex >= 0 && sources.isNotEmpty()
+                ) {
+                    sources[previousIndex.coerceAtMost(sources.lastIndex)]
+                } else {
+                    null
+                }
                 when {
                     keep != null -> selectSource(keep, reload = false)
                     remembered != null -> selectSource(remembered, reload = true)
+                    neighbor != null -> selectSource(neighbor, reload = true)
                     sources.isNotEmpty() -> selectSource(sources.first(), reload = true)
                     else -> renderEmptyState()
                 }

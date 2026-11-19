@@ -100,9 +100,22 @@ object AppWebDav {
     @Throws(WebDavException::class)
     private suspend fun checkAuthorization(authorization: Authorization) {
         if (!WebDav(rootWebDavUrl, authorization).check()) {
-            appCtx.removePref(PreferKey.webDavPassword)
+            // 不再直接删除已保存的密码：一次 401（可能是网络抖动/临时错误）就把密码抹除，
+            // 会导致 authorization 永久为 null，之后云备份/恢复静默失效。
+            // 仅提示错误并抛出异常，密码保留，用户可在设置里修正后用「测试连接」重试。
             appCtx.toastOnUi(R.string.webdav_application_authorization_error)
             throw WebDavException(appCtx.getString(R.string.webdav_application_authorization_error))
+        }
+    }
+
+    /**
+     * 测试当前 WebDAV 配置是否可用（坚果云 / 飞牛 fnOS / 自定义通用）。
+     * 会重新加载配置；authorization 为空即视为连接失败。
+     */
+    suspend fun testConnection(): Result<Unit> = kotlin.runCatching {
+        upConfig()
+        if (authorization == null) {
+            throw NoStackTraceException("连接失败，请检查 WebDAV 地址、账号和密码")
         }
     }
 
@@ -183,11 +196,11 @@ object AppWebDav {
      */
     @Throws(Exception::class)
     suspend fun backUpWebDav(fileName: String, onProgress: ProgressListener? = null) {
-        if (!NetworkUtils.isAvailable()) return
-        authorization?.let {
-            val putUrl = "$rootWebDavUrl$fileName"
-            WebDav(putUrl, it).upload(Backup.zipFilePath, onProgress = onProgress)
-        }
+        if (!NetworkUtils.isAvailable()) throw NoStackTraceException("网络未连接，无法备份到云端")
+        val auth = authorization
+            ?: throw NoStackTraceException("WebDAV 未连接成功，请检查账号密码或点击“测试连接”")
+        val putUrl = "$rootWebDavUrl$fileName"
+        WebDav(putUrl, auth).upload(Backup.zipFilePath, onProgress = onProgress)
     }
 
     suspend fun listThemePackages(isNightTheme: Boolean): List<WebDavFile> {
