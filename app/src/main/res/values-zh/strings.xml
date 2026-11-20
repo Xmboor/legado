@@ -1778,6 +1778,9 @@
     <string name="cache_manage_pack_failed">缓存打包失败</string>
     <string name="cache_manage_upload_all">上传全部</string>
     <string name="cache_manage_delete_all">删除全部</string>
+    <string name="cache_manage_cache_all">全部缓存</string>
+    <string name="cache_manage_cache_all_confirm">缓存当前列表中 %1$d 本的未缓存章节？</string>
+    <string name="cache_manage_cache_all_done">批量缓存完成：已提交 %1$d 章，失败 %2$d 本</string>
     <string name="cache_manage_batch_empty">没有可操作的缓存</string>
     <string name="cache_manage_batch_upload_done">批量上传完成：成功 %1$d，失败 %2$d</string>
     <string name="cache_manage_delete_all_confirm">删除当前列表中 %1$d 本的全部缓存？</string>

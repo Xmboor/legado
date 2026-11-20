@@ -19,6 +19,8 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.databinding.ActivityCacheManageBinding
 import io.legado.app.help.AppWebDav
+import io.legado.app.help.book.isAudio
+import io.legado.app.help.book.isVideo
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.theme.UiCorner
@@ -107,6 +109,7 @@ class CacheManageActivity :
         btnVideo.setOnClickListener { switchMode(CacheManageMode.VIDEO) }
         btnManga.setOnClickListener { switchMode(CacheManageMode.MANGA) }
         btnStats.setOnClickListener { showStats() }
+        btnCacheAll.setOnClickListener { cacheAll() }
         btnUploadAll.setOnClickListener { uploadAll() }
         btnDeleteAll.setOnClickListener { deleteAll() }
         batchBar.applyNavigationBarMargin(withInitialMargin = true)
@@ -427,6 +430,55 @@ class CacheManageActivity :
         selector(getString(R.string.cache_manage_select_source), labels) { _, index ->
             val variant = variants.getOrNull(index) ?: return@selector
             viewModel.selectSource(item.groupKey, variant.sourceKey)
+        }
+    }
+
+    private fun cacheAll() {
+        val items = adapter.getItems().filter {
+            it.sourceAvailable && !it.hasLockedAudioTask() && it.cachedCount < it.totalChapterCount
+        }
+        if (items.isEmpty()) {
+            toastOnUi(R.string.cache_manage_batch_empty)
+            return
+        }
+        alert(
+            getString(R.string.cache_manage_cache_all),
+            getString(R.string.cache_manage_cache_all_confirm, items.size)
+        ) {
+            yesButton { cacheAllItems(items) }
+            noButton()
+        }
+    }
+
+    private fun cacheAllItems(items: List<CacheBookItem>) {
+        lifecycleScope.launch {
+            var queued = 0
+            var failed = 0
+            items.forEach { item ->
+                kotlin.runCatching {
+                    val chapters = viewModel.getChapterItems(
+                        item.book,
+                        null,
+                        CacheChapterFilter.UNCACHED
+                    ).map { it.chapter }
+                    if (chapters.isEmpty()) return@runCatching 0
+                    if (item.book.isAudio || item.book.isVideo) {
+                        viewModel.cacheMediaChapters(
+                            item.book,
+                            chapters,
+                            reloadOnFinished = false
+                        )
+                    } else {
+                        viewModel.cacheBookChapters(item.book, chapters)
+                    }
+                }.onSuccess { count ->
+                    queued += count
+                }.onFailure {
+                    failed++
+                }
+            }
+            toastOnUi(getString(R.string.cache_manage_cache_all_done, queued, failed))
+            viewModel.load()
         }
     }
 

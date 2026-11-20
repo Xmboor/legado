@@ -1898,6 +1898,9 @@
     <string name="cache_manage_pack_failed">Failed to pack cache</string>
     <string name="cache_manage_upload_all">Upload all</string>
     <string name="cache_manage_delete_all">Delete all</string>
+    <string name="cache_manage_cache_all">Cache all</string>
+    <string name="cache_manage_cache_all_confirm">Cache missing chapters for %1$d item(s) in the current list?</string>
+    <string name="cache_manage_cache_all_done">Batch cache done: %1$d chapter(s) queued, %2$d failed</string>
     <string name="cache_manage_batch_empty">No cache to operate</string>
     <string name="cache_manage_batch_upload_done">Batch upload finished: %1$d succeeded, %2$d failed</string>
     <string name="cache_manage_delete_all_confirm">Delete all cache for %1$d item(s) in the current list?</string>
